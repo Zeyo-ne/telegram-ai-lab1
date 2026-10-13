@@ -44,6 +44,8 @@ def main() -> int:
                 check=True,
             )
             marker.write_text(digest.hexdigest(), encoding="utf-8")
+        if sys.argv[1:] == ["--dependencies-only"]:
+            return 0
         return subprocess.call([str(python), "-m", "scripts.cli", *sys.argv[1:]], cwd=ROOT, env=env)
     except (OSError, subprocess.CalledProcessError):
         print("Не удалось подготовить .venv. Проверьте Python, доступ к PyPI и вывод выше.")
