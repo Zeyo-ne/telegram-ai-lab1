@@ -2,11 +2,43 @@
 
 import hashlib
 import os
+import platform
+import re
 import subprocess
 import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
+
+
+def configure_macos_version(env: dict[str, str], directory: Path) -> None:
+    """Для дочерних Python берём фактическую версию macOS, если mac_ver пуст."""
+    if sys.platform != "darwin" or platform.mac_ver()[0]:
+        return
+    version = subprocess.check_output(
+        ["/usr/bin/sw_vers", "-productVersion"], env=env, text=True, timeout=10
+    ).strip()
+    if not re.fullmatch(r"[0-9]+(?:\.[0-9]+){1,2}", version):
+        raise OSError("sw_vers не вернул корректную версию macOS")
+    directory.mkdir(parents=True, exist_ok=True)
+    source = f'''"""Совместимость только для запуска этого проекта."""
+import platform
+import sys
+
+if sys.platform == "darwin":
+    _original_mac_ver = platform.mac_ver
+
+    def _mac_ver(release="", versioninfo=("", "", ""), machine=""):
+        result = _original_mac_ver(release, versioninfo, machine)
+        if result[0]:
+            return result
+        return ({version!r}, result[1], result[2] or platform.machine())
+
+    platform.mac_ver = _mac_ver
+'''
+    (directory / "sitecustomize.py").write_text(source, encoding="utf-8")
+    env["PYTHONPATH"] = str(directory)
+    print(f"Версия macOS для установки библиотек: {version} (из sw_vers).", flush=True)
 
 
 def prepare_pip(python: Path, env: dict[str, str]) -> None:
@@ -55,6 +87,7 @@ def main() -> int:
         if check.returncode:
             print("В .venv другая версия Python. Переименуйте .venv и запустите скрипт снова.")
             return 1
+        configure_macos_version(env, ROOT / ".venv" / ".macos-compat")
         prepare_pip(python, env)
         digest = hashlib.sha256(
             b"".join(
