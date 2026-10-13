@@ -4,11 +4,14 @@ import logging
 
 from aiogram import Dispatcher
 
+from app.assistant import Assistant
 from app.config import ConfigError, Settings
 from app.db import create_pool
-from app.handlers.echo import router
+from app.handlers.assistant import create_router
 from app.health import HealthState, start_health_server
+from app.llm import HTTPModel
 from app.logging_setup import configure_logging
+from app.storage import PostgresRepository
 from app.telegram import create_bot
 
 logger = logging.getLogger("app")
@@ -18,6 +21,7 @@ async def run(settings: Settings) -> None:
     state = HealthState()
     bot = create_bot(settings)
     runner = None
+    model = None
     try:
         state.pool = await create_pool(settings)
         logger.info("PostgreSQL подключён: SELECT 1 выполнен.")
@@ -31,13 +35,19 @@ async def run(settings: Settings) -> None:
                 "или используйте отдельного учебного бота."
             )
         logger.info("Telegram доступен. Бот @%s запускает polling.", me.username)
+        settings.require_llm()
+        repository = PostgresRepository(state.pool, settings.history_max_messages)
+        await repository.initialize()
+        model = HTTPModel(settings)
+        assistant = Assistant(repository, model, settings)
         dispatcher = Dispatcher()
-        dispatcher.include_router(router)
+        dispatcher.include_router(create_router())
         runner = await start_health_server(state, settings.health_port)
         state.polling_task = asyncio.create_task(
             dispatcher.start_polling(
                 bot,
                 db=state.pool,
+                assistant=assistant,
                 allowed_updates=dispatcher.resolve_used_update_types(),
                 close_bot_session=False,
             )
@@ -51,6 +61,8 @@ async def run(settings: Settings) -> None:
             await asyncio.gather(state.polling_task, return_exceptions=True)
         if runner:
             await runner.cleanup()
+        if model:
+            await model.close()
         await bot.session.close()
         if state.pool:
             try:
@@ -61,7 +73,7 @@ async def run(settings: Settings) -> None:
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(description="Учебный текстовый эхо-бот")
+    parser = argparse.ArgumentParser(description="AI-помощник студента — лабораторная №1")
     parser.add_argument("--env-file", default=".env")
     args = parser.parse_args()
     try:
