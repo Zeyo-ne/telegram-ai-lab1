@@ -373,6 +373,23 @@ def test_cloud_help_renders(capsys):
     assert "Гарантия vCPU, %" in capsys.readouterr().out
 
 
+def test_cloud_missing_llm_settings_stops_before_cloud_setup(tmp_path, monkeypatch):
+    from types import SimpleNamespace
+
+    from app.config import ConfigError, Settings
+    from scripts import cloud
+
+    config = Settings(bot_token="unused", postgres_password="unused")
+    monkeypatch.setattr(cloud.shutil, "which", lambda _: "/usr/bin/ssh")
+    monkeypatch.setattr(cloud, "prepare_env", Mock(return_value=tmp_path / ".env.cloud"))
+    monkeypatch.setattr(cloud.Settings, "load", Mock(return_value=config))
+    monkeypatch.setattr(cloud, "install_yc", Mock())
+
+    with pytest.raises(ConfigError, match="LLM_API_KEY"):
+        cloud.cloud_main(tmp_path, SimpleNamespace(action="up"))
+    cloud.install_yc.assert_not_called()
+
+
 def test_setup_only_checks_real_credentials_without_starting_bot(tmp_path, monkeypatch):
     # Arrange
     from unittest.mock import AsyncMock

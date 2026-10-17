@@ -17,15 +17,31 @@ def test_local_and_cloud_compose_ports_credentials_and_healthchecks(tmp_path):
     # Arrange
     root = Path(__file__).resolve().parents[1]
     password = "p$a#s's\\\\tail"
+    model_settings = {
+        "LLM_BASE_URL": "https://model.example/v1",
+        "LLM_API_KEY": "fake$model#key'example",
+        "LLM_MODEL": "example/test-model",
+        "LLM_TIMEOUT": "45",
+        "LLM_MAX_TOKENS": "8000",
+        "LLM_RETRIES": "0",
+        "HISTORY_MAX_MESSAGES": "12",
+        "CONTEXT_MAX_UNITS": "28000",
+        "INPUT_MAX_CHARS": "6000",
+    }
     env_file = tmp_path / ".env"
     env_file.write_text(
-        "BOT_TOKEN=test\nPOSTGRES_PORT=55432\nPOSTGRES_PASSWORD=" + compose_quote(password) + "\n",
+        "BOT_TOKEN=test\nPOSTGRES_PORT=55432\nPOSTGRES_PASSWORD="
+        + compose_quote(password)
+        + "\n"
+        + "".join(f"{key}={compose_quote(value)}\n" for key, value in model_settings.items()),
         encoding="utf-8",
     )
     environ = {
         key: value
         for key, value in os.environ.items()
-        if not key.startswith(("POSTGRES_", "BOT_TOKEN", "COMPOSE_"))
+        if not key.startswith(
+            ("POSTGRES_", "BOT_TOKEN", "COMPOSE_", "LLM_", "HISTORY_", "CONTEXT_", "INPUT_")
+        )
     }
     command = compose_command(root)
     command[command.index("--env-file") + 1] = str(env_file)
@@ -64,6 +80,8 @@ def test_local_and_cloud_compose_ports_credentials_and_healthchecks(tmp_path):
     assert all(not service.get("ports") for service in cloud.values())
     assert cloud["bot"]["environment"]["POSTGRES_HOST"] == "db"
     assert cloud["bot"]["environment"]["POSTGRES_PORT"] == "5432"
+    for key, value in model_settings.items():
+        assert cloud["bot"]["environment"][key].replace("$$", "$") == value
     assert "app.healthcheck" in cloud["bot"]["healthcheck"]["test"]
     assert cloud["bot"]["healthcheck"]["timeout"] == "20s"
     assert cloud["bot"]["depends_on"]["db"]["condition"] == "service_healthy"

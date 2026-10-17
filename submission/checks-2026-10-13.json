@@ -1,0 +1,26 @@
+{
+  "date": "2026-10-13T09:42:42.302998+03:00",
+  "platform": "darwin",
+  "checks": [
+    {
+      "command": "python -m pytest -q -m not integration",
+      "exit_code": 0,
+      "output": "........................................................................ [ 61%]\n.............................................                            [100%]\n117 passed, 2 deselected in 3.04s\n"
+    },
+    {
+      "command": "python -m ruff check .",
+      "exit_code": 0,
+      "output": "All checks passed!\n"
+    },
+    {
+      "command": "python -m ruff format --check .",
+      "exit_code": 1,
+      "output": "unformatted: File would be reformatted\n  --> .venv-backup-1791869887/.macos-compat/sitecustomize.py:2:1\n   |\n1  | \"\"\"Совместимость только для запуска этого проекта.\"\"\"\n2  +\n3  | import platform\n--------------------------------------------------------------------------------\n12 |             return result\n   -         return ('26.2', result[1], result[2] or platform.machine())\n13 +         return (\"26.2\", result[1], result[2] or platform.machine())\n14 |\n   |\n\n1 file would be reformatted, 38 files already formatted\n"
+    },
+    {
+      "command": "python -m pip check",
+      "exit_code": 0,
+      "output": "No broken requirements found.\n"
+    }
+  ]
+}

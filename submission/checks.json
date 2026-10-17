@@ -1,0 +1,31 @@
+{
+  "date": "2026-10-17T11:49:06.616654+03:00",
+  "platform": "darwin",
+  "python_version": "Python 3.12.14",
+  "docker_server_version": "29.8.2",
+  "base_commit": "6d88f8b62052c4f63700a91d5553965e63d4f457",
+  "code_sha256": "e6af5f65328a088a17ce8f2d2fdba3cfab13a259e848a909d9baefdfdb1cab63",
+  "scope": "All tests, including real isolated PostgreSQL; no live Telegram or external LLM API.",
+  "checks": [
+    {
+      "command": "RUN_INTEGRATION=1 python -m pytest -q",
+      "exit_code": 0,
+      "output": "........................................................................ [ 55%]\n.........................................................                [100%]\n129 passed in 7.26s\n"
+    },
+    {
+      "command": "python -m ruff check .",
+      "exit_code": 0,
+      "output": "All checks passed!\n"
+    },
+    {
+      "command": "python -m ruff format --check .",
+      "exit_code": 0,
+      "output": "40 files already formatted\n"
+    },
+    {
+      "command": "python -m pip check",
+      "exit_code": 0,
+      "output": "No broken requirements found.\n"
+    }
+  ]
+}

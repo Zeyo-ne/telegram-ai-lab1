@@ -34,6 +34,15 @@ services:
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Задайте POSTGRES_PASSWORD}
       LOG_LEVEL: ${LOG_LEVEL:-INFO}
       HEALTH_PORT: ${HEALTH_PORT:-8080}
+      LLM_BASE_URL: ${LLM_BASE_URL:-https://openrouter.ai/api/v1}
+      LLM_API_KEY: ${LLM_API_KEY:-}
+      LLM_MODEL: ${LLM_MODEL:-}
+      LLM_TIMEOUT: ${LLM_TIMEOUT:-60}
+      LLM_MAX_TOKENS: ${LLM_MAX_TOKENS:-1200}
+      LLM_RETRIES: ${LLM_RETRIES:-1}
+      HISTORY_MAX_MESSAGES: ${HISTORY_MAX_MESSAGES:-20}
+      CONTEXT_MAX_UNITS: ${CONTEXT_MAX_UNITS:-24000}
+      INPUT_MAX_CHARS: ${INPUT_MAX_CHARS:-12000}
     depends_on:
       db:
         condition: service_healthy

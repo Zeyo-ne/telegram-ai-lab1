@@ -379,3 +379,19 @@ def test_llm_key_hidden_in_repr_and_logs(settings, capsys):
         assert "test-key" not in repr(settings)
     finally:
         logging.getLogger().handlers.clear()
+
+
+@pytest.mark.parametrize("missing", ["llm_api_key", "llm_model"])
+def test_missing_llm_setting_stops_before_network(settings, monkeypatch, capsys, missing):
+    from unittest.mock import Mock
+
+    from app import __main__ as application
+
+    config = replace(settings, **{missing: ""})
+    monkeypatch.setattr(application.Settings, "load", Mock(return_value=config))
+    monkeypatch.setattr(application, "run", AsyncMock())
+    monkeypatch.setattr("sys.argv", ["app"])
+
+    assert application.main() == 1
+    assert missing.upper() in capsys.readouterr().out
+    application.run.assert_not_called()

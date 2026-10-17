@@ -495,6 +495,7 @@ def cloud_main(root: Path, args) -> int:
     settings = None
     if args.action == "up":
         settings = Settings.load(prepare_env(root, cloud=True))
+        settings.require_llm()
     if args.action != "up" and not (root / ".deploy" / "state.json").exists():
         raise CommandError("Нет состояния деплоя. Сначала выполните deploy up.")
     yc_path = install_yc()

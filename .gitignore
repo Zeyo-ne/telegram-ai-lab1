@@ -16,5 +16,6 @@ htmlcov/
 /docs/verification.md
 /docs/presentations/*-notes.md
 /reports/
+/submission/private/
 /.verification/
 *.zip
